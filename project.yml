@@ -1,0 +1,30 @@
+name: Juiced
+options:
+  bundleIdPrefix: com.zanebookbinder
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  Juiced:
+    type: application
+    platform: iOS
+    sources: [Sources, Resources]
+    entitlements:
+      path: Juiced.entitlements
+      properties:
+        com.apple.developer.usernotifications.time-sensitive: true
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Juiced
+        UIBackgroundModes: [audio]
+        UILaunchScreen: {}
+        UIApplicationSupportsIndirectInputEvents: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zanebookbinder.Juiced
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: 1
+        SWIFT_VERSION: "5.0"
+        DEVELOPMENT_TEAM: XFNCN2MARQ
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
