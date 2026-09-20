@@ -24,9 +24,12 @@ state flips, so you get one alert per charge cycle rather than a stream.
 
 ## Screenshots
 
-| App | Charged alert | Low alert |
-|---|---|---|
-| ![App](docs/screenshot-app.png) | ![Charged](docs/screenshot-alert-charged.png) | ![Low](docs/screenshot-alert-low.png) |
+<p align="center">
+  <img src="docs/screenshot-app.png" width="300" alt="Juiced main screen">
+</p>
+
+<p align="center"><em>Two wheels set the ceiling and the floor. Captured in the
+simulator, which has no accessory power sources, so the reading is sample data.</em></p>
 
 ## How it works
 

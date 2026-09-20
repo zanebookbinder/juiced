@@ -24,6 +24,17 @@ enum WatchBattery {
     }
 
     static func read() -> WatchState? {
+        if let real = liveRead() { return real }
+        #if targetEnvironment(simulator)
+        // The simulator has no accessory power sources; sample data so the UI is
+        // exercisable (and screenshottable) without a device.
+        return WatchState(name: "Zane's Apple Watch", percent: 99, charging: false)
+        #else
+        return nil
+        #endif
+    }
+
+    private static func liveRead() -> WatchState? {
         // "Accessory Category" == Watch is the reliable discriminator; filtering by
         // name would collide with AirPods and break if the watch is renamed.
         guard let d = allSources().first(where: { ($0["Accessory Category"] as? String) == "Watch" })

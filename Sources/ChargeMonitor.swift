@@ -17,7 +17,6 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
         super.init()
         // Without this, iOS silently swallows the banner while the app is frontmost.
         UNUserNotificationCenter.current().delegate = self
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
     }
 
     func userNotificationCenter(_ c: UNUserNotificationCenter,
@@ -36,7 +35,10 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
     func toggle() { running ? stop() : start() }
 
     func start() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
+        // -screenshots skips the permission prompt so the UI can be captured cleanly.
+        if !ProcessInfo.processInfo.arguments.contains("-screenshots") {
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
+        }
         startKeepAlive()
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in self?.tick() }
