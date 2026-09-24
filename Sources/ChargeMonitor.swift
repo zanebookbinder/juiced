@@ -4,9 +4,14 @@ import UserNotifications
 
 final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
     @Published var running = false
-    @Published var status = "—"
     @Published var threshold = 80      // notify at/above this while charging
     @Published var floorLevel = 20     // notify at/below this while off the charger
+
+    @Published private(set) var watchName = "Apple Watch"
+    @Published private(set) var percent = -1
+    @Published private(set) var charging = false
+
+    let history = BatteryHistory()
 
     private var timer: Timer?
     private var notified = false
@@ -27,9 +32,7 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
 
     /// Fires the real notification path immediately, ignoring watch state.
     func sendTest() {
-        let w = WatchBattery.read()
-        notify(title: "Watch ready",
-               body: "\(w?.name ?? "Apple Watch") at \(w?.percent ?? 0)% — grab it.")
+        notify(title: "Watch ready", body: "\(watchName) at \(max(percent, 0))% — grab it.")
     }
 
     func toggle() { running ? stop() : start() }
@@ -51,14 +54,16 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
         timer?.invalidate(); timer = nil
         player?.stop(); player = nil
         try? AVAudioSession.sharedInstance().setActive(false)
+        history.save()
         running = false
-        status = "stopped"
     }
 
     func tick() {
-        guard let w = WatchBattery.read() else { status = "watch not found"; print("TICK watch not found"); return }
-        status = "\(w.name): \(w.percent)%\(w.charging ? " ⚡️" : "")"
-        print("TICK \(status)")
+        guard let w = WatchBattery.read() else { return }
+        watchName = w.name
+        percent = w.percent
+        charging = w.charging
+        history.record(percent: w.percent, charging: w.charging)
 
         if w.charging {
             lowNotified = false                              // back on the charger, re-arm the floor

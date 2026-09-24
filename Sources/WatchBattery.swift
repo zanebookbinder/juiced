@@ -51,9 +51,4 @@ enum WatchBattery {
                           charging: charging)
     }
 
-    static func debugDump() -> String {
-        allSources().map { d in
-            d.sorted { $0.key < $1.key }.map { "\($0.key) = \($0.value)" }.joined(separator: "\n")
-        }.joined(separator: "\n---\n")
-    }
 }

@@ -19,17 +19,22 @@ watch's battery and fires a local notification when it crosses a threshold:
 - **Charged** — watch is on the charger and at/above your ceiling (default 80%): *"Zane's Apple Watch at 80% — grab it."*
 - **Low** — watch is off the charger and at/below your floor (default 20%): *"Zane's Apple Watch at 20% — charge it soon."*
 
+It also logs a reading roughly every minute and keeps a rolling 7 days of
+history, charted over 4 hours, 24 hours, or the full week (swipe the chart or
+use the segmented control). Readings only accrue while the app is alive, so
+stopping monitoring or force-quitting leaves a gap in the series.
+
 Both alerts are silent and time-sensitive. Each re-arms when the watch's charging
 state flips, so you get one alert per charge cycle rather than a stream.
 
 ## Screenshots
 
-<p align="center">
-  <img src="docs/screenshot-app.png" width="300" alt="Juiced main screen">
-</p>
+| 24 hours | 7 days | Dark |
+|---|---|---|
+| <img src="docs/screenshot-app.png" width="240"> | <img src="docs/screenshot-week.png" width="240"> | <img src="docs/screenshot-dark.png" width="240"> |
 
-<p align="center"><em>Two wheels set the ceiling and the floor. Captured in the
-simulator, which has no accessory power sources, so the reading is sample data.</em></p>
+<p align="center"><em>Captured in the simulator, which has no accessory power
+sources — the readings and history are sample data.</em></p>
 
 ## How it works
 
@@ -105,7 +110,9 @@ Set `DEVELOPMENT_TEAM` in `project.yml` to your own team ID, then run on a devic
 power sources.
 
 Settings live in `ChargeMonitor` (`threshold`, `floorLevel`, 30s poll interval) and
-are adjustable in the UI.
+are adjustable in the UI. History is persisted to `Documents/history.json` and
+pruned to 7 days on load. Launching with `-screenshots` skips the notification
+permission prompt.
 
 ## Notifications on the watch
 
@@ -131,8 +138,8 @@ Nothing about it is device-specific, though — it's unentitled and needs no jai
 so it runs on any iPhone you can sign for. Realistic distribution is ad-hoc/development
 (up to 100 devices/year on a paid account) or sideloading via AltStore/SideStore.
 
-Private API behavior shifts between iOS releases; the **Debug dump** toggle in the app
-prints the raw power-source dictionaries, which is how you'd spot a change.
+Private API behavior shifts between iOS releases. `WatchBattery.allSources()` returns
+the raw power-source dictionaries, which is where you'd look to spot a change.
 
 ## License
 
