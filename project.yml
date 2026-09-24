@@ -16,6 +16,9 @@ targets:
       path: Info.plist
       properties:
         CFBundleDisplayName: Juiced
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes: [audio]
         UILaunchScreen: {}
         UIApplicationSupportsIndirectInputEvents: true
@@ -27,4 +30,6 @@ targets:
         SWIFT_VERSION: "5.0"
         DEVELOPMENT_TEAM: XFNCN2MARQ
         CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
