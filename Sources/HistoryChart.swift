@@ -16,7 +16,17 @@ enum ChartRange: String, CaseIterable, Identifiable {
         }
     }
 
-    var strideBy: (Calendar.Component, Int) {
+    /// Tick + gridline spacing.
+    var tickStride: (Calendar.Component, Int) {
+        switch self {
+        case .fourHours: return (.minute, 15)
+        case .day:       return (.hour, 1)
+        case .week:      return (.hour, 6)
+        }
+    }
+
+    /// Label spacing — coarser than the ticks, or they collide on a phone.
+    var labelStride: (Calendar.Component, Int) {
         switch self {
         case .fourHours: return (.hour, 1)
         case .day:       return (.hour, 6)
@@ -72,7 +82,13 @@ struct HistoryChart: View {
                 }
             }
             .chartXAxis {
-                AxisMarks(values: .stride(by: range.strideBy.0, count: range.strideBy.1)) { value in
+                AxisMarks(values: .stride(by: range.tickStride.0, count: range.tickStride.1)) {
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(.secondary.opacity(0.25))
+                    AxisTick(length: 3)
+                        .foregroundStyle(.secondary.opacity(0.5))
+                }
+                AxisMarks(values: .stride(by: range.labelStride.0, count: range.labelStride.1)) {
                     AxisGridLine()
                     AxisValueLabel(format: range.format)
                 }

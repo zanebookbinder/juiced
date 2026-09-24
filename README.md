@@ -21,8 +21,12 @@ watch's battery and fires a local notification when it crosses a threshold:
 
 It also logs a reading roughly every minute and keeps a rolling 7 days of
 history, charted over 4 hours, 24 hours, or the full week (swipe the chart or
-use the segmented control). Readings only accrue while the app is alive, so
-stopping monitoring or force-quitting leaves a gap in the series.
+use the segmented control), with gridlines every 15 minutes, hour, and 6 hours
+respectively. Readings only accrue while the app is alive, so stopping
+monitoring or force-quitting leaves a gap in the series.
+
+A full week is 10,080 samples — about 443 KB on disk and ~250 KB in memory —
+and the chart thins each window to at most 350 points before drawing.
 
 Both alerts are silent and time-sensitive. Each re-arms when the watch's charging
 state flips, so you get one alert per charge cycle rather than a stream.

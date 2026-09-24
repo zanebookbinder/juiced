@@ -33,9 +33,19 @@ final class BatteryHistory: ObservableObject {
         if unsaved >= 5 { save() }                  // batch writes; at most 5 min lost on kill
     }
 
-    func samples(since interval: TimeInterval, now: Date = Date()) -> [Sample] {
+    /// Samples in the window, thinned to at most `maxPoints` for display.
+    ///
+    /// A full week is 10,080 samples, and Swift Charts draws two marks for each —
+    /// far more geometry than 390pt of screen can resolve. Battery curves are
+    /// smooth enough that plain striding tracks them faithfully.
+    func samples(since interval: TimeInterval, maxPoints: Int = 350, now: Date = Date()) -> [Sample] {
         let cutoff = now.addingTimeInterval(-interval)
-        return samples.filter { $0.t >= cutoff }
+        let window = samples.filter { $0.t >= cutoff }
+        guard window.count > maxPoints else { return window }
+        let step = window.count / maxPoints
+        var thinned = stride(from: 0, to: window.count, by: step).map { window[$0] }
+        if let last = window.last, thinned.last != last { thinned.append(last) }
+        return thinned
     }
 
     func save() {

@@ -22,8 +22,8 @@ struct ContentView: View {
         NavigationStack {
             List {
                 statusSection
-                historySection
                 thresholdSection
+                historySection
                 controlSection
                 appearanceSection
             }
@@ -35,24 +35,33 @@ struct ContentView: View {
 
     private var statusSection: some View {
         Section {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(spacing: 14) {
+                Image(systemName: "applewatch")
+                    .font(.system(size: 36, weight: .light))
+                    .foregroundStyle(.primary)
+
                 VStack(alignment: .leading, spacing: 2) {
                     Text(monitor.watchName).font(.headline)
                     Text(monitor.running ? "Monitoring" : "Paused")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
                 Spacer()
-                HStack(spacing: 4) {
-                    if monitor.charging {
-                        Image(systemName: "bolt.fill").foregroundStyle(.green)
+
+                VStack(alignment: .trailing, spacing: 6) {
+                    HStack(spacing: 4) {
+                        if monitor.charging {
+                            Image(systemName: "bolt.fill").foregroundStyle(.green)
+                        }
+                        Text(monitor.percent >= 0 ? "\(monitor.percent)%" : "—")
+                            .font(.system(.title, design: .rounded)).bold()
+                            .monospacedDigit()
                     }
-                    Text(monitor.percent >= 0 ? "\(monitor.percent)%" : "—")
-                        .font(.system(.title, design: .rounded)).bold()
-                        .monospacedDigit()
+                    BatteryGauge(percent: monitor.percent)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
         }
     }
 
