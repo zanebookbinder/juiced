@@ -14,7 +14,7 @@ enum Appearance: String, CaseIterable, Identifiable {
 }
 
 struct ContentView: View {
-    @StateObject private var monitor = ChargeMonitor()
+    @StateObject private var monitor = ChargeMonitor.shared
     @AppStorage("appearance") private var appearance: Appearance = .system
     @State private var range: ChartRange = .day
 
@@ -42,9 +42,15 @@ struct ContentView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(monitor.watchName).font(.headline)
-                    Text(monitor.running ? "Monitoring" : "Paused")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let last = monitor.lastReading {
+                        Text("Updated \(last, format: .relative(presentation: .numeric))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(monitor.running ? "Monitoring" : "Paused")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Spacer()

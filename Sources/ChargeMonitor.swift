@@ -1,8 +1,12 @@
 import Foundation
 import AVFoundation
 import UserNotifications
+import BackgroundTasks
 
 final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
+    static let shared = ChargeMonitor()
+    static let refreshTaskID = "com.zanebookbinder.Juiced.refresh"
+
     @Published var running = false
     @Published var threshold = 80      // notify at/above this while charging
     @Published var floorLevel = 20     // notify at/below this while off the charger
@@ -10,6 +14,7 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
     @Published private(set) var watchName = "Apple Watch"
     @Published private(set) var percent = -1
     @Published private(set) var charging = false
+    @Published private(set) var lastReading: Date?
 
     let history = BatteryHistory()
 
@@ -22,6 +27,7 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
         super.init()
         // Without this, iOS silently swallows the banner while the app is frontmost.
         UNUserNotificationCenter.current().delegate = self
+        observeAudioLifecycle()
     }
 
     func userNotificationCenter(_ c: UNUserNotificationCenter,
@@ -47,6 +53,7 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
         timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in self?.tick() }
         timer?.tolerance = 5
         running = true
+        scheduleRefresh()
         tick()
     }
 
@@ -59,10 +66,12 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
     }
 
     func tick() {
+        keepAliveWatchdog()
         guard let w = WatchBattery.read() else { return }
         watchName = w.name
         percent = w.percent
         charging = w.charging
+        lastReading = Date()
         history.record(percent: w.percent, charging: w.charging)
 
         if w.charging {
@@ -95,15 +104,82 @@ final class ChargeMonitor: NSObject, ObservableObject, UNUserNotificationCenterD
             UNNotificationRequest(identifier: UUID().uuidString, content: c, trigger: nil))
     }
 
-    /// Silent looping audio keeps the process alive so the timer keeps firing.
+    // MARK: - Keepalive
+    //
+    // Silent looping audio keeps the process alive so the timer keeps firing.
+    // It is fragile: a phone call, Siri, or a media-services reset stops playback,
+    // and once the app is no longer producing audio iOS suspends it and the timer
+    // never fires again. Everything below exists to notice that and restart.
+
     private func startKeepAlive() {
         let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, options: [.mixWithOthers])
-        try? session.setActive(true)
+        do {
+            try session.setCategory(.playback, options: [.mixWithOthers])
+            try session.setActive(true)
+        } catch {
+            print("KEEPALIVE session error: \(error)")
+        }
         guard let url = Bundle.main.url(forResource: "silence", withExtension: "m4a") else { return }
         player = try? AVAudioPlayer(contentsOf: url)
         player?.numberOfLoops = -1
         player?.volume = 0
-        player?.play()
+        if player?.play() != true { print("KEEPALIVE play() failed") }
+    }
+
+    private func restartKeepAlive() {
+        player?.stop()
+        player = nil
+        startKeepAlive()
+    }
+
+    /// Cheap check on every tick: if playback died, the process is on borrowed time.
+    private func keepAliveWatchdog() {
+        guard running, player?.isPlaying != true else { return }
+        print("KEEPALIVE watchdog: playback stopped, restarting")
+        restartKeepAlive()
+    }
+
+    private func observeAudioLifecycle() {
+        let nc = NotificationCenter.default
+        nc.addObserver(self, selector: #selector(handleInterruption(_:)),
+                       name: AVAudioSession.interruptionNotification, object: nil)
+        nc.addObserver(self, selector: #selector(handleMediaReset),
+                       name: AVAudioSession.mediaServicesWereResetNotification, object: nil)
+    }
+
+    /// A call or Siri interrupts playback; iOS does NOT resume it for us.
+    @objc private func handleInterruption(_ n: Notification) {
+        guard running,
+              let raw = n.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+        if type == .ended { restartKeepAlive() }
+    }
+
+    /// The audio server crashed; every session and player object is now invalid.
+    @objc private func handleMediaReset() {
+        guard running else { return }
+        player = nil
+        restartKeepAlive()
+    }
+
+    // MARK: - Background refresh backstop
+    //
+    // If the keepalive loses anyway and iOS suspends us, this is the only way back:
+    // iOS relaunches the app in the background, we take a reading and restart the
+    // keepalive. It does not run at all after a force-quit from the app switcher.
+
+    func scheduleRefresh() {
+        let request = BGAppRefreshTaskRequest(identifier: Self.refreshTaskID)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
+        do { try BGTaskScheduler.shared.submit(request) }
+        catch { print("BGTask submit failed: \(error)") }
+    }
+
+    @MainActor
+    func backgroundRefresh() async {
+        scheduleRefresh()          // always chain the next one first
+        if running { restartKeepAlive() }
+        tick()
+        history.save()
     }
 }

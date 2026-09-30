@@ -19,7 +19,8 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         ITSAppUsesNonExemptEncryption: false
-        UIBackgroundModes: [audio]
+        UIBackgroundModes: [audio, fetch]
+        BGTaskSchedulerPermittedIdentifiers: [com.zanebookbinder.Juiced.refresh]
         UILaunchScreen: {}
         UIApplicationSupportsIndirectInputEvents: true
     settings:
